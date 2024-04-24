@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Path to the Excel file containing the URLs
-excel_file_path = "C:\\Users\\Admin\\Documents\\pysc\\excels\\DATA_2020A.xlsx"
+excel_file_path = "C:\\Users\\MSI Thin\\Documents\\chrry\\script\\script-py\\excels\\DATA_2020A.xlsx"
 
 # Define the index of the column containing the URLs (assuming it's the second column)
 url_column_index = 2
@@ -93,7 +93,7 @@ for row_num, row in enumerate(worksheet.iter_rows(min_row=2, max_col=2, values_o
         print("Error processing URL:", url, "-", e)
 
 # Save the workbook
-excel_export_path = "C:\\Users\\Admin\\Documents\\pysc\\excels\\2020A_BELUM_LULUS_result.xlsx"
+excel_export_path = "C:\\Users\\MSI Thin\\Documents\\chrry\\script\\script-py\\excels\\2020A_BELUM_LULUS_result.xlsx"
 workbook.save(excel_export_path)
 print("Exported data to:", excel_export_path)
 

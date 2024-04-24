@@ -1,59 +1,143 @@
+import openpyxl
 import os
-import urllib.request
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-import time
+import requests
+from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
-def download_images(search_term, num_images=10, output_folder="sample_data", driver_path="C:\\Users\\Admin\\Documents\\pysc\\packages\\chromedriver.exe"):
-    # Initialize the Chrome WebDriver service
-    service = Service(driver_path)
+# Function to check if a file exists and return an incremented name
+def get_unique_filename(filename):
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    while os.path.exists(filename):
+        filename = f"{base}_{counter}{ext}"
+        counter += 1
+    return filename
 
-    # Initialize Chrome driver with the specified service
-    driver = webdriver.Chrome(service=service)
+# Path to the Excel file containing the URLs
+excel_file_path = "C:\\Users\\MSI Thin\\Documents\\chrry\\script\\script-py\\excels\\2020A_1.xlsx"
 
-    # Google Image Search URL template
-    url = "https://www.google.com/search?q={}&tbm=isch&tbs=sur%3Afc&hl=en&ved=0CAIQpwVqFwoTCKCa1c6s4-oCFQAAAAAdAAAAABAC&biw=1251&bih=568"
+# Define the index of the column containing the URLs (assuming it's the second column)
+url_column_index = 2
+url_column_status_posttest = 7
+url_column_status_pretest = 8
+url_column_pretest_order = 9  # New column for pre test order
+url_column_post_test_order = 10  # New column for post test order
 
-    # Load the Google Image Search page with the specified search term
-    driver.get(url.format(search_term))
+# Load the Excel workbook
+workbook = openpyxl.load_workbook(excel_file_path)
 
-    # Scroll down to load more images
-    driver.execute_script("window.scrollTo(0,document.body.scrollHeight);")
+# Get the active worksheet
+worksheet = workbook.active
 
-    # Wait for page to load images
-    time.sleep(2)
+# Function to process a single URL
+# Function to process a single URL
+# Function to process a single URL
+def process_url(url):
+    try:
+        response = requests.get(url)
+        print("Opened URL:", url)
 
-    # Find all image elements using full XPath
-    img_results = driver.find_elements(By.XPATH, "/html/body/div[5]/div/div[13]/div/div[2]/div[2]/div/div/div/div/div[1]/div/div/div[2]/div[2]/h3/a/div/div/div/g-img/img")
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Find all tables in the page
+        tables = soup.find_all('table')
+        
+        # Access text from the desired tables
+        pre_test_text = tables[0].get_text()
+        last = len(tables) - 1
+        post_test_text = tables[last].get_text()
 
-    img_src = []
+        # Check if "Pre Test" is present in the text
+        if "Pre Test" in pre_test_text:
+            # Check if "Pre Test" is at the first position in the text
+            if pre_test_text.strip().startswith("Pre Test"):
+                print("Pre Test ditemukan di urutan pertama pada tabel")
+            else:
+                print("Error: Pre Test tidak ditemukan di urutan pertama pada tabel")
+        else:
+            print("Pre Test tidak ditemukan")
 
-    # Extract image URLs
-    for img in img_results:
-        src = img.get_attribute('src')
-        if src:
-            img_src.append(src)
+        # Check if "Post Test" is present in the text
+       
+         if "Post Test" in post_test_text:
+            if post_test_text.strip().endswith("Post Test"):
+                print("Post Test ditemukan di tabel")
+                post_test_result = "Ada"
+            else:
+                print("Post Test tidak ditemukan di tabel")
+                post_test_result = "Tidak Ada"
 
-    # Create the output folder if it doesn't exist
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+        # Check if tbody with id "encounterList" exists
+        tbody_encounter_list = soup.find('tbody', id='encounterList')
+        
+        if tbody_encounter_list is None or not tbody_encounter_list.find_all(['tr', 'td']):
+            return post_test_result, "Tidak ada", None, None  # Return None for pre test order if "Pre Test" not found
+        
+        # Check for Pre Test existence and its order
+        pre_test_order = None
+        for idx, row in enumerate(tbody_encounter_list.find_all('tr'), start=1):
+            if "Pre Test" in row.text:
+                pre_test_order = idx
+                break
+        
+        pre_test_status = "Ada" if pre_test_order else "Tidak Ada"
+        
+        return post_test_result, pre_test_status, pre_test_order, None
 
-    # Limit the number of images to download to the minimum between the specified number and the actual number of images found
-    num_images_to_download = min(len(img_src), num_images)
+    except Exception as e:
+        print("Error processing URL:", url, "-", e)
+        return "Error", "Error", None, None
 
-    # Download images
-    for i in range(num_images_to_download):
-        try:
-            img_url = img_src[i]
-            filename = f"{output_folder}/{search_term}{i}.jpg"
-            urllib.request.urlretrieve(img_url, filename)
-            print(f"Downloaded image {i+1}/{num_images_to_download}: {img_url}")
-        except Exception as e:
-            print(f"Error downloading image {i+1}: {e}")
 
-    # Close the browser
-    driver.quit()
+# List to store results
+results = []
 
-# Example usage:
-download_images("pets", num_images=10, output_folder="sample_data")
+# Iterate through each row in Excel data
+urls = [row[url_column_index - 1] for row in worksheet.iter_rows(min_row=2, max_col=2, values_only=True) if row[url_column_index - 1]]
+
+# Define the total number of URLs for tqdm
+total_urls = len(urls)
+
+# Function to process URLs and update progress bar
+def process_urls_with_progress(url):
+    post_test_result, pre_test_result, pre_test_order, post_test_order = process_url(url)
+    results.append((post_test_result, pre_test_result, pre_test_order, post_test_order))
+    pbar.update(1)  # Update progress bar
+
+# Set up tqdm progress bar
+with tqdm(total=total_urls, desc="Processing URLs", unit="URL") as pbar:
+    # Process URLs using ThreadPoolExecutor
+    with ThreadPoolExecutor() as executor:
+        for url in urls:
+            executor.submit(process_urls_with_progress, url)
+
+# Insert new columns for status post test, status pre test, and pre test order
+worksheet.insert_cols(url_column_status_posttest, 4)
+
+# Write titles for the new columns
+worksheet.cell(row=1, column=url_column_status_posttest, value="Status Post Test")
+worksheet.cell(row=1, column=url_column_status_pretest, value="Status Pre Test")
+worksheet.cell(row=1, column=url_column_pretest_order, value="Urutan Pretest")  # Column for pre test order
+worksheet.cell(row=1, column=url_column_post_test_order, value="Urutan Post Test")  # Column for post test order
+
+# Update the status columns with results
+for row_num, (post_test_result, pre_test_result, pre_test_order, post_test_order) in zip(range(2, len(urls) + 2), results):
+    worksheet.cell(row=row_num, column=url_column_status_posttest, value=post_test_result)
+    worksheet.cell(row=row_num, column=url_column_status_pretest, value=pre_test_result)
+    worksheet.cell(row=row_num, column=url_column_pretest_order, value=pre_test_order if pre_test_order is not None else "Error")
+    worksheet.cell(row=row_num, column=url_column_post_test_order, value=post_test_result if post_test_result == "Ada" and post_test_order is not None else "Error")
+   
+    print(f"Updated 'Status Post Test' column with: {post_test_result}")
+    print(f"Updated 'Status Pre Test' column with: {pre_test_result}")
+    print(f"Updated 'Urutan Pretest' column with: {pre_test_order}")
+    print(f"Updated 'Urutan Post Test' column with: {'OKE' if post_test_result == 'OKE' and post_test_order is not None else 'Error'}")
+
+#Generate a unique filename for export
+export_filename = get_unique_filename("C:\\Users\\MSI Thin\\Documents\\chrry\\script\\script-py\\excels\\TES.xlsx")
+
+# Save the workbook with the unique filename
+workbook.save(export_filename)
+print("Exported data to:", export_filename)
+
+workbook.close()
