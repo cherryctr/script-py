@@ -1,0 +1,436 @@
+# Tentukan jalur folder sumber dan tujuan
+$sourceFolders = @("C:\Xampp\file\folder\Folder1", "C:\Xampp\file\folder\Folder2")
+$destinationFolder = "C:\Xampp\destination\fileku"
+
+# Buat folder tujuan jika belum ada
+New-Item -Path $destinationFolder -ItemType Directory -Force
+
+# Iterasi melalui setiap folder sumber
+foreach ($folder in $sourceFolders) {
+    # Dapatkan semua berkas dan subfolder dalam folder sumber
+    $itemsToMove = Get-ChildItem -Path $folder -Recurse
+
+    # Pindahkan semua berkas dan subfolder ke folder tujuan
+    foreach ($item in $itemsToMove) {
+        $destinationItemPath = Join-Path -Path $destinationFolder -ChildPath $item.Name
+        Move-Item -Path $item.FullName -Destination $destinationItemPath -Force
+        Write-Host "$($item.FullName) dipindahkan ke $destinationFolder"
+    }
+}
+
+Write-Host "Semua isi folder telah dipindahkan ke folder tujuan."
+
+
+$sourceFolders = @("C:\Users\MSI Thin\Documents\chrry\testingfolder\2023-07-28", "C:\Users\MSI Thin\Documents\chrry\testingfolder\2023-07-29")
+
+
+# Tentukan jalur folder sumber dan tujuan
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\testingfolder"
+$destinationFolder = "C:\Xampp\destination\fileku"
+
+# Buat folder tujuan jika belum ada
+New-Item -Path $destinationFolder -ItemType Directory -Force
+
+# Iterasi melalui setiap folder tanggal dalam rentang bulan Juli hingga September
+for ($month = 7; $month -le 9; $month++) {
+    for ($day = 1; $day -le 31; $day++) {
+        # Format tanggal dalam format "yyyy-mm-dd"
+        $dateFolder = "{0}-{1:00}-{2:00}" -f (Get-Date).Year, $month, $day
+
+        # Dapatkan jalur folder sumber untuk tanggal tertentu
+        $sourceFolder = Join-Path -Path $sourceRootFolder -ChildPath $dateFolder
+
+        # Cek apakah folder sumber ada
+        if (Test-Path $sourceFolder -PathType Container) {
+            # Dapatkan semua berkas dan subfolder dalam folder sumber
+            $itemsToMove = Get-ChildItem -Path $sourceFolder -Recurse
+
+            # Pindahkan semua berkas dan subfolder ke folder tujuan
+            foreach ($item in $itemsToMove) {
+                $destinationItemPath = Join-Path -Path $destinationFolder -ChildPath $item.Name
+                Move-Item -Path $item.FullName -Destination $destinationItemPath -Force
+                Write-Host "$($item.FullName) dipindahkan ke $destinationFolder"
+            }
+        }
+    }
+}
+
+Write-Host "Semua isi folder telah dipindahkan ke folder tujuan."
+
+
+Get-ChildItem | Rename-Item -NewName { $_.Name -replace '(\d{2})-(\d{2})-(\d{4})', '$3-$2-$1' }
+
+
+# Tentukan jalur folder sumber dan tujuan
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\testingfolder"
+$destinationFolder = "C:\Xampp\destination\fileku"
+
+# Buat folder tujuan jika belum ada
+New-Item -Path $destinationFolder -ItemType Directory -Force
+
+# Dapatkan semua folder di folder sumber
+$sourceFolders = Get-ChildItem -Path $sourceRootFolder -Directory
+
+# Iterasi melalui setiap folder di folder sumber
+foreach ($folder in $sourceFolders) {
+    # Periksa apakah nama folder mengandung tahun "2023"
+    if ($folder.Name -match "2023") {
+        # Dapatkan semua berkas dan subfolder dalam folder saat ini
+        $itemsToMove = Get-ChildItem -Path $folder.FullName -Recurse
+
+        # Pindahkan semua berkas dan subfolder ke folder tujuan
+        foreach ($item in $itemsToMove) {
+            $destinationItemPath = Join-Path -Path $destinationFolder -ChildPath $item.Name
+            Move-Item -Path $item.FullName -Destination $destinationItemPath -Force
+            Write-Host "$($item.FullName) dipindahkan ke $destinationFolder"
+        }
+    }
+}
+
+Write-Host "Semua isi folder tahun 2023 telah dipindahkan ke folder tujuan."
+
+# Tentukan jalur folder sumber
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\testingfolder"
+
+# Dapatkan daftar semua berkas dalam folder sumber dan subfolder
+$files = Get-ChildItem -Path $sourceRootFolder -File -Recurse
+
+# Iterasi melalui setiap berkas
+foreach ($file in $files) {
+    # Ambil tanggal dari nama folder induk
+    $folderName = $file.Directory.Name
+    $folderDate = [datetime]::ParseExact($folderName, "yyyy-MM-dd", $null)
+
+    # Ubah tanggal modifikasi berkas menjadi tanggal dari nama folder
+    $file.LastWriteTime = $folderDate.AddDays(-1)
+
+    Write-Host "Tanggal modifikasi berkas $($file.Name) telah diubah menjadi $($folderDate.AddDays(-1))"
+}
+
+Write-Host "Proses selesai."
+
+
+# Tentukan jalur folder sumber
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\testingfolder"
+
+# Dapatkan daftar semua berkas dalam folder sumber dan subfolder
+$files = Get-ChildItem -Path $sourceRootFolder -File -Recurse
+
+# Iterasi melalui setiap berkas
+foreach ($file in $files) {
+    # Ambil tanggal dari nama folder induk
+    $folderName = $file.Directory.Name
+
+    # Cek format tanggal yang sesuai
+    if ($folderName -match '\d{8}') {
+        # Format tanggal "ddmmyyyy"
+        $folderDate = [datetime]::ParseExact($folderName, "ddMMyyyy", $null)
+    } elseif ($folderName -match '\d{2}-\d{2}-\d{4}') {
+        # Format tanggal "dd-mm-yyyy"
+        $folderDate = [datetime]::ParseExact($folderName, "dd-MM-yyyy", $null)
+    } elseif ($folderName -match '\d{4}-\d{2}-\d{2}') {
+        # Format tanggal "yyyy-MM-dd"
+        $folderDate = [datetime]::ParseExact($folderName, "yyyy-MM-dd", $null)
+    } else {
+        Write-Host "Format tanggal folder tidak dikenali: $folderName"
+        continue
+    }
+
+    # Ubah tanggal modifikasi berkas menjadi tanggal dari nama folder
+    $file.LastWriteTime = $folderDate.AddDays(-1)
+
+    Write-Host "Tanggal modifikasi berkas $($file.Name) telah diubah menjadi $($folderDate.AddDays(-1))"
+}
+
+Write-Host "Proses selesai."
+
+NEW
+
+# Tentukan jalur folder sumber
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\testingfolder"
+
+# Dapatkan daftar semua berkas dalam folder sumber dan subfolder
+$files = Get-ChildItem -Path $sourceRootFolder -File -Recurse
+
+# Iterasi melalui setiap berkas
+foreach ($file in $files) {
+    try {
+        # Ambil tanggal dari nama folder induk
+        $folderName = $file.Directory.Name
+
+        # Cek format tanggal yang sesuai
+        if ($folderName -match '\d{8}') {
+            # Format tanggal "ddmmyyyy"
+            $folderDate = [datetime]::ParseExact($folderName, "ddMMyyyy", $null)
+        } elseif ($folderName -match '\d{2}-\d{2}-\d{4}') {
+            # Format tanggal "dd-mm-yyyy"
+            $folderDate = [datetime]::ParseExact($folderName, "dd-MM-yyyy", $null)
+        } elseif ($folderName -match '\d{4}-\d{2}-\d{2}') {
+            # Format tanggal "yyyy-MM-dd"
+            $folderDate = [datetime]::ParseExact($folderName, "yyyy-MM-dd", $null)
+        } elseif ($folderName -match '\d{2}/\d{2}/\d{4}') {
+            # Format tanggal "dd/mm/yyyy"
+            $folderDate = [datetime]::ParseExact($folderName, "dd/MM/yyyy", $null)
+        } elseif ($folderName -match '\d{4}/\d{2}/\d{2}') {
+            # Format tanggal "yyyy/mm/dd"
+            $folderDate = [datetime]::ParseExact($folderName, "yyyy/MM/dd", $null)
+        } else {
+            Write-Host "Format tanggal folder tidak dikenali: $folderName. Lokasi folder: $($file.Directory.FullName)"
+            continue
+        }
+
+        # Ubah tanggal modifikasi berkas menjadi tanggal dari nama folder
+        $file.LastWriteTime = $folderDate.AddDays(-1)
+
+        Write-Host "Tanggal modifikasi berkas $($file.Name) telah diubah menjadi $($folderDate.AddDays(-1)). Lokasi file: $($file.FullName)"
+    } catch {
+        Write-Host "Terjadi kesalahan saat memproses file $($file.FullName): $_"
+        break
+    }
+}
+
+Write-Host "Proses selesai."
+
+
+
+
+
+xxxxxxxxxxx
+
+# Tentukan path folder yang berisi file yang akan diduplikasi
+$folderPath = "D:\Babastudio\Prakerja\New folder"
+
+# Ambil daftar file di dalam folder
+$files = Get-ChildItem -Path $folderPath
+
+# Loop untuk menduplikasi file sebanyak yang Anda inginkan
+for ($i = 1; $i -le 500; $i++) {
+    foreach ($file in $files) {
+        # Dapatkan tanggal saat ini dalam format tanggal-bulan-tahun
+        $dateStamp = Get-Date -Format "yyyy-MM-dd"
+        
+        # Buat nama file baru dengan format tugas-nomor_iterasi-tanggal
+        $newFileName = "tugas-saya-$i-$dateStamp$($file.Extension)"
+        
+        # Path lengkap untuk file asli
+        $sourceFilePath = $file.FullName
+        
+        # Path lengkap untuk file baru
+        $destinationFilePath = Join-Path -Path $folderPath -ChildPath $newFileName
+        
+        # Salin file asli ke file baru
+        Copy-Item -Path $sourceFilePath -Destination $destinationFilePath
+        
+        # Outputkan informasi bahwa file berhasil diduplikasi
+        Write-Host "File $($file.Name) berhasil diduplikasi dan dinamai menjadi $newFileName"
+    }
+}
+
+# Load modul Excel
+Add-Type -AssemblyName Microsoft.Office.Interop.Excel
+
+# Tentukan jalur folder sumber
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\testingfolder"
+
+# Inisialisasi aplikasi Excel
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$workbook = $excel.Workbooks.Add()
+$worksheet = $workbook.Worksheets.Item(1)
+$row = 1
+
+# Dapatkan daftar semua folder di jalur sumber
+$folders = Get-ChildItem -Path $sourceRootFolder -Directory
+
+# Iterasi melalui setiap folder
+foreach ($folder in $folders) {
+    try {
+        # Ambil daftar file di dalam folder
+        $filesInFolder = Get-ChildItem -Path $folder.FullName -File
+
+        # Iterasi melalui setiap file di dalam folder
+        foreach ($file in $filesInFolder) {
+            # Tulis nama file ke dalam worksheet
+            $worksheet.Cells.Item($row, 1) = $file.Name
+            $row++
+        }
+
+        Write-Host "Daftar nama file dalam folder $($folder.Name) telah ditulis ke dalam worksheet."
+    } catch {
+        Write-Host "Terjadi kesalahan saat memproses folder $($folder.FullName): $_"
+        continue
+    }
+}
+
+
+# Load the Excel module
+Add-Type -AssemblyName Microsoft.Office.Interop.Excel
+
+# Define the source folder path
+$sourceRootFolder = "C:\Users\MSI Thin\Documents\chrry\hasil download fix\backup baru1\Hasil Download\400 - Iqbal\2023-06-16"
+
+# Initialize the Excel application
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$workbook = $excel.Workbooks.Add()
+$worksheet = $workbook.Worksheets.Item(1)
+$row = 1
+
+# Write the header for the worksheet
+$worksheet.Cells.Item($row, 1) = "File Name"
+$worksheet.Cells.Item($row, 2) = "Extension"
+$row++
+
+# Get a list of all files in the source path
+$files = Get-ChildItem -Path $sourceRootFolder -File -Recurse
+
+# Iterate through each file
+foreach ($file in $files) {
+    try {
+        # Write only the base name of the file into the worksheet
+        $worksheet.Cells.Item($row, 1) = $file.BaseName
+        # Write the file extension into the next column
+        $worksheet.Cells.Item($row, 2) = $file.Extension -replace '^\.', ''  # Removing the dot before the extension if present
+        $row++
+
+        Write-Host "File name $($file.BaseName) with extension $($file.Extension) has been written to the worksheet."
+    } catch {
+        Write-Host "An error occurred while processing file $($file.FullName): $_"
+        continue
+    }
+}
+
+# Save the worksheet into an Excel file
+$excelFileName = Join-Path -Path $sourceRootFolder -ChildPath "FileNamesAndExtensions.xlsx"
+$workbook.SaveAs($excelFileName)
+
+Write-Host "Excel file containing a list of file names and extensions has been created at $excelFileName."
+
+# Close the workbook
+$workbook.Close($false)
+
+# Quit the Excel application
+$excel.Quit()
+
+# Release Excel resources
+[System.Runtime.InteropServices.Marshal]::ReleaseComObject($worksheet) | Out-Null
+[System.Runtime.InteropServices.Marshal]::ReleaseComObject($workbook) | Out-Null
+[System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+[System.GC]::Collect()
+[System.GC]::WaitForPendingFinalizers()
+
+
+# Install Selenium.WebDriver module
+Install-Module -Name Selenium.WebDriver -Force -AllowClobber
+
+# Import Selenium WebDriver module
+Import-Module Selenium.WebDriver
+
+# Path to the Excel file containing the data (change this to your file path)
+$excelFile = "D:\Babastudio\Prakerja\tes400.xlsx"
+
+# Define the download directory (change this to your desired directory)
+$downloadDirectory = "D:\Babastudio\Prakerja\tes400"
+
+# Create a new Firefox WebDriver
+try {
+    $firefoxOptions = New-Object OpenQA.Selenium.Firefox.FirefoxOptions
+    $firefoxOptions.AddArgument("--headless")  # Optional: run Firefox in headless mode
+    $driver = New-Object OpenQA.Selenium.Firefox.FirefoxDriver -ArgumentList @($null, $firefoxOptions)
+} catch {
+    Write-Host "Error creating Firefox WebDriver: $_"
+    exit
+}
+
+# Open the Excel file
+try {
+    $excel = New-Object -ComObject Excel.Application
+    $workbook = $excel.Workbooks.Open($excelFile)
+    $worksheet = $workbook.Worksheets.Item(1)
+    $rowCount = $worksheet.UsedRange.Rows.Count
+} catch {
+    Write-Host "Error opening Excel file: $_"
+    $driver.Quit()
+    exit
+}
+
+# Iterate through each row in Excel data starting from the second row
+for ($i = 2; $i -le $rowCount; $i++) {
+    # Get the URL from the second column (column B) of each row
+    $directDownloadURL = $worksheet.Cells.Item($i, 2).Value2
+
+    # Navigate to the URL
+    $driver.Navigate().GoToUrl($directDownloadURL)
+
+    # Wait for the page to load (adjust the sleep time as needed)
+    Start-Sleep -Seconds 5
+
+    try {
+        # Find the download button and click it
+        $downloadButton = $driver.FindElementByXPath("//a[contains(text(),'Download')]")
+        $downloadButton.Click()
+
+        Write-Host "Downloaded: $($directDownloadURL)"
+    } catch {
+        Write-Host "Error downloading $($directDownloadURL): $_"
+    }
+}
+
+# Close the browser and quit WebDriver
+$driver.Quit()
+
+# Close Excel
+$excel.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
+
+
+xxxxxxxxxxx
+
+import time
+import os
+import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
+
+# Set up the Chrome WebDriver
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service)
+
+# Folder to save images
+if not os.path.exists('freepik_images'):
+    os.mkdir('freepik_images')
+
+# Navigate to the URL
+url = 'https://www.freepik.com/free-photos-vectors/website-mockup'
+driver.get(url)
+time.sleep(5)  # Let the page load completely
+
+# Scroll down to load all images
+driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+time.sleep(3)  # Wait for all images to load
+
+# Get page source and parse it with BeautifulSoup
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+images = soup.find_all('img', {'class': 'rfx-picture__image'})  # Find all images with specific class
+
+# Process each image
+for i, img in enumerate(images):
+    src = img.get('src') or img.get('data-src')
+    try:
+        if src and "http" in src:
+            response = requests.get(src, stream=True)
+            if response.status_code == 200:
+                with open(f'freepik_images/img_{i}.jpg', 'wb') as f:
+                    f.write(response.content)
+                print(f'Downloaded {src}')
+    except Exception as e:
+        print(f'Failed to download {src}. Reason: {e}')
+
+# Close the driver
+driver.quit()
+print('Completed downloading images.')
+
